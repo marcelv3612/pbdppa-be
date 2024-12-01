@@ -1,0 +1,31 @@
+server:
+    port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri:
+        mongodb://localhost:27017/bdcga-pbdpp-be
+      database:
+        bdcga-pbdpp-be
+
+# Additional configurations
+  jackson:
+    serialization:
+      indent_output:
+        true
+
+solana:
+  module:
+    base-url:
+      http://localhost:8000
+
+app:
+  jwtSecret:
+    QE57szbOdBMiXxT3riSlHzfolBpsouhEF6+17qJMeQo=
+  jwtExpirationMs:
+    86400000
+
+logging:
+  level:
+    org.springframework: INFO
