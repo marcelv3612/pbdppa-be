@@ -1,30 +1,31 @@
 package com.bdcga.pbdpp.dto// package com.bdcga.pbdpp.dto
 
-import com.bdcga.pbdpp.model.BigFiveScores
-import com.bdcga.pbdpp.model.TimeSlot
 import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 data class RegisterRequest(
-    @field:NotBlank
+    @field:NotBlank(message = "Username is required")
     val username: String,
 
-    @field:Email
-    @field:NotBlank
+    @field:Email(message = "Invalid email address")
     val email: String,
 
-    @field:Size(min = 6)
+    @field:NotBlank(message = "Password is required")
+    @field:Size(min = 8, message = "Password must be at least 8 characters")
     val password: String,
 
-    val bigFiveScores: BigFiveScores? = null,
+    @field:NotBlank(message = "Gender is required")
+    val gender: String,
 
-    val availability: List<TimeSlot> = emptyList()
+    @field:Min(value = 0, message = "Software experience cannot be negative")
+    val softwareExperience: Int
 )
 
 data class AuthResponse(
-    val accessToken: String,
-    val tokenType: String = "Bearer"
+    val token: String? = null,
+    val error: String? = null
 )
 
 data class LoginRequest(

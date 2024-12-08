@@ -1,16 +1,19 @@
 package com.bdcga.pbdpp.service// package com.bdcga.pbdpp.service
 
 import com.bdcga.pbdpp.dto.*
+import com.bdcga.pbdpp.model.BigFiveScores
 import com.bdcga.pbdpp.model.User
 import com.bdcga.pbdpp.repository.UserRepository
 import com.bdcga.pbdpp.security.JwtTokenProvider
 import com.bdcga.pbdpp.security.UserPrincipal
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+
+private const val USER_NOT_FOUND = "User not found"
 
 @Service
 class UserService(
@@ -18,14 +21,19 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtTokenProvider: JwtTokenProvider,
 ) {
+    private val logger = LoggerFactory.getLogger(UserService::class.java)
 
-    suspend fun registerUser(request: RegisterRequest): ResponseEntity<Any> {
+    suspend fun registerUser(request: RegisterRequest): ResponseEntity<AuthResponse> {
+        logger.info("Attempting to register user: ${request.username}")
+
         // Check if username or email already exists
         if (userRepository.existsByUsername(request.username).awaitFirstOrNull() == true) {
-            return ResponseEntity.badRequest().body(ApiResponse(false, "Username is already taken!"))
+            logger.warn("Username already taken: ${request.username}")
+            return ResponseEntity.badRequest().body(AuthResponse(error = "Username is already taken!"))
         }
         if (userRepository.existsByEmail(request.email).awaitFirstOrNull() == true) {
-            return ResponseEntity.badRequest().body(ApiResponse(false, "Email Address already in use!"))
+            logger.warn("Email already in use: ${request.email}")
+            return ResponseEntity.badRequest().body(AuthResponse(error = "Email Address already in use!"))
         }
 
         // Create new user
@@ -33,11 +41,18 @@ class UserService(
             username = request.username,
             email = request.email,
             passwordHash = passwordEncoder.encode(request.password),
-            bigFiveScores = request.bigFiveScores,
-            availability = request.availability
+            gender = request.gender,
+            softwareExperience = request.softwareExperience,
         )
-        val result = userRepository.save(user).awaitFirstOrNull()
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(true, result?.id ?: ""))
+        val savedUser = userRepository.save(user).awaitFirstOrNull()
+        logger.info("User registered successfully with ID: ${savedUser?.id}")
+
+        // Generate JWT token
+        val userPrincipal = UserPrincipal.create(savedUser!!)
+        val jwt = jwtTokenProvider.generateToken(userPrincipal)
+
+        // Return token in the response
+        return ResponseEntity.status(HttpStatus.CREATED).body(AuthResponse(token = jwt))
     }
 
     suspend fun authenticateUser(loginRequest: LoginRequest): ResponseEntity<AuthResponse> {
@@ -55,7 +70,40 @@ class UserService(
 
     suspend fun getUserProfile(userId: String): ResponseEntity<Any> {
         val user = userRepository.findById(userId).awaitFirstOrNull()
-            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse(false, "User not found"))
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse(false, USER_NOT_FOUND))
         return ResponseEntity.ok(user)
+    }
+
+    suspend fun updateBigFiveScores(userId: String, request: BigFiveScoresRequest): ResponseEntity<Any> {
+        val user = userRepository.findById(userId).awaitFirstOrNull()
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse(false, USER_NOT_FOUND))
+
+        val updatedUser = user.copy(
+            bigFiveScores = BigFiveScores(
+                extraversion = request.extraversion,
+                agreeableness = request.agreeableness,
+                conscientiousness = request.conscientiousness,
+                neuroticism = request.neuroticism,
+                openness = request.openness
+            )
+        )
+
+        userRepository.save(updatedUser).awaitFirstOrNull()
+        return ResponseEntity.ok(ApiResponse(true, "BigFive scores updated successfully"))
+    }
+
+    suspend fun updateAvailability(userId: String, request: AvailabilityRequest): ResponseEntity<Any> {
+        logger.info("Updating availability for user ID: $userId")
+
+        val user = userRepository.findById(userId).awaitFirstOrNull()
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse(false, USER_NOT_FOUND))
+
+        val updatedUser = user.copy(
+            availability = request.availability
+        )
+
+        userRepository.save(updatedUser).awaitFirstOrNull()
+        logger.info("Availability updated for user ID: $userId")
+        return ResponseEntity.ok(ApiResponse(true, "Availability updated successfully"))
     }
 }

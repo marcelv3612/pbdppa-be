@@ -13,7 +13,7 @@ class WebFluxConfig : WebFluxConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
-            .allowedOrigins("*") // Update with your frontend's origin
+            .allowedOrigins("http://localhost:3000") // Update with your frontend's origin
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
     }
 }

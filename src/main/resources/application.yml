@@ -22,7 +22,7 @@ solana:
 
 app:
   jwtSecret:
-    QE57szbOdBMiXxT3riSlHzfolBpsouhEF6+17qJMeQo=
+    QE57szbOdBMiXxT3riSlHzfolBpsouhEF6+17qJMeQo= # Todo: Never hardcode the JWT secret in your code.
   jwtExpirationMs:
     86400000
 

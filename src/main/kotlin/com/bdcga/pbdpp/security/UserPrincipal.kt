@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails
 class UserPrincipal(
     val id: String,
     private val username: String,
-    private val email: String,
+    val email: String,
     private val password: String
 ) : UserDetails {
 
