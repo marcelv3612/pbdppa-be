@@ -24,7 +24,7 @@ class SecurityConfig(
         return http
             .csrf { it.disable() }
             .authorizeExchange {
-                it.pathMatchers("/api/register", "/api/authenticate").permitAll()
+                it.pathMatchers("/api/*").permitAll()
                 it.anyExchange().authenticated()
             }
             .authenticationManager(jwtAuthenticationManager)
